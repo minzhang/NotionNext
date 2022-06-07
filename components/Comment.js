@@ -2,6 +2,8 @@ import BLOG from '@/blog.config'
 import dynamic from 'next/dynamic'
 import Tabs from '@/components/Tabs'
 import { useGlobal } from '@/lib/global'
+import React from 'react'
+import { useRouter } from 'next/router'
 
 const WalineComponent = dynamic(
   () => {
@@ -45,6 +47,19 @@ const Comment = ({ frontMatter }) => {
     return <>Loading...</>
   }
   const { isDarkMode } = useGlobal()
+  const router = useRouter()
+
+  React.useEffect(() => {
+    // 跳转到评论区
+    setTimeout(() => {
+      if (window.location.href.indexOf('target=comment') > -1) {
+        const url = router.asPath.replace('?target=comment', '')
+        history.replaceState({}, '', url)
+        const commentNode = document.getElementById('comment')
+        commentNode.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      }
+    }, 200)
+  }, [])
 
   return (
     <div id='comment' className='comment mt-5 text-gray-800 dark:text-gray-300'>
