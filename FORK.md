@@ -45,12 +45,16 @@ These values are the committed fallbacks, so a Vercel build does not need them s
 | Site since | 2010 | `blog.config.js` (`NEXT_PUBLIC_SINCE`) |
 | Font | `font-mono tracking-wider subpixel-antialiased` | `conf/font.config.js` |
 | Hexo greetings | 会写代码, 爱好杂乱, 欢迎来到我的博客🎉 | `blog.config.js` (`NEXT_PUBLIC_GREETING_WORDS`) |
-| Cusdis app id | `148a2b60-94e3-46b6-b317-847f875e2060` | `conf/comment.config.js` |
+| Comments | Utterances on `minzhang/NotionNext` | `conf/comment.config.js` |
 | Google Analytics | `G-8N5K9G8Q11` | `conf/analytics.config.js` |
 
 Email and GitHub contact fields stay empty. Fireworks stay off, which is also upstream's default.
 
 The 2022 tree stored the Hexo greetings in `themes/hexo/config_hexo.js`. Upstream removed that file. The same three phrases now live in `GREETING_WORDS`.
+
+Article pages use Utterances for the footer comment box. The 2022 site used Cusdis (`148a2b60-94e3-46b6-b317-847f875e2060`). That hosted service is down (Cloudflare 521) and the project was archived in July 2026, so the widget cannot load. Utterances stores new comments as GitHub issues on `minzhang/NotionNext`, keyed by the Notion page id. Older Cusdis threads are not imported.
+
+Utterances only accepts comments after two GitHub settings on that repo: Issues are enabled, and the [utterances app](https://github.com/apps/utterances) is installed. Set `NEXT_PUBLIC_COMMENT_UTTERRANCES_REPO` to use a different `owner/repo`.
 
 ## Notion
 
