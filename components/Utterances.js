@@ -25,15 +25,17 @@ const Utterances = ({ issueTerm, layout }) => {
     script.setAttribute('crossorigin', 'anonymous');
     script.setAttribute('async', true);
     script.setAttribute('repo', siteConfig('COMMENT_UTTERRANCES_REPO'));
-    script.setAttribute('issue-term', 'title');
+    // Page id stays attached to the post if the title or slug changes.
+    script.setAttribute('issue-term', issueTerm || 'pathname');
     // 初始主题
     script.setAttribute('theme', isDarkMode ? 'github-dark' : 'github-light');
-    anchor?.appendChild(script);
+    anchor.appendChild(script);
 
     return () => {
-      // anchor.innerHTML = ''
+      script.remove()
+      anchor.querySelector('iframe.utterances-frame')?.remove()
     };
-  }, []);
+  }, [issueTerm]);
 
   useEffect(() => {
     // 直接设置 iframe 的类来改变主题，不重新加载脚本
