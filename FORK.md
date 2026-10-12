@@ -103,3 +103,13 @@ Production is Vercel, connected to this GitHub repository. Pushes to `main` crea
 `blog.minzhang.com` still answers with `Server: Vercel`. There is no Vercel token or project id in the repo. After this catch-up is merged, the next push to `main` is what publishes the new version.
 
 `.github/workflows/docker-ghcr.yaml` can build a container image. It is not the path that published the live site. GitHub's deployment list for this repo contains only Vercel.
+
+## Cloud Agent dev server
+
+A Cloud Agent environment proposed against the 3.4.5 tree starts `yarn dev` with a preload that rewrites Notion responses for `notion-client` 6. NotionNext 4.10.10 uses `notion-client` 7.12.1 and does not need that preload. After this branch is on `main`, the environment start command should be:
+
+```bash
+exec yarn dev -H 0.0.0.0 -p 3000
+```
+
+Leave the preload off. Install with `yarn install --frozen-lockfile` once `main` contains `yarn.lock`.
