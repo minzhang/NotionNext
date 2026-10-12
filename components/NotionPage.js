@@ -1,160 +1,203 @@
-import { NotionRenderer } from 'react-notion-x'
+import { siteConfig } from '@/lib/config'
+import { compressImage, mapImgUrl } from '@/lib/db/notion/mapImage'
+import NotionEmbed from '@/components/NotionEmbed'
+import NotionLink from '@/components/NotionLink'
+import { isBrowser, loadExternalResource } from '@/lib/utils'
+import mediumZoom from '@fisch0920/medium-zoom'
+import 'katex/dist/katex.min.css'
 import dynamic from 'next/dynamic'
-import mediumZoom from 'medium-zoom'
-import React from 'react'
-import { isBrowser } from '@/lib/utils'
-import Image from 'next/image'
-import Link from 'next/link'
-import { Code } from 'react-notion-x/build/third-party/code'
+import { useEffect, useRef } from 'react'
+import { NotionRenderer } from 'react-notion-x'
+import OriginalityProof from './OriginalityProof'
 
-// 支持更多的自定义语言
-import 'prismjs/components/prism-r.js'
+/**
+ * 整个站点的核心组件
+ * 将Notion数据渲染成网页
+ * @param {*} param0
+ * @returns
+ */
+const NotionPage = ({ post, className }) => {
+  // 是否关闭数据库和画册的点击跳转
+  const POST_DISABLE_GALLERY_CLICK = siteConfig('POST_DISABLE_GALLERY_CLICK')
+  const POST_DISABLE_DATABASE_CLICK = siteConfig('POST_DISABLE_DATABASE_CLICK')
+  const SPOILER_TEXT_TAG = siteConfig('SPOILER_TEXT_TAG')
 
-const Collection = dynamic(() =>
-  import('react-notion-x/build/third-party/collection').then((m) => m.Collection), { ssr: true }
-)
-
-const Equation = dynamic(() =>
-  import('react-notion-x/build/third-party/equation').then((m) => m.Equation), { ssr: true }
-)
-
-const Pdf = dynamic(
-  () => import('react-notion-x/build/third-party/pdf').then((m) => m.Pdf), { ssr: false }
-)
-
-const Modal = dynamic(
-  () => import('react-notion-x/build/third-party/modal').then((m) => m.Modal), { ssr: false }
-)
-
-const NotionPage = ({ post }) => {
-  if (!post || !post.blockMap) {
-    return <>{post?.summary || ''}</>
-  }
-
-  const zoom = isBrowser() && mediumZoom({
-    container: '.notion-viewport',
-    background: 'rgba(0, 0, 0, 0.2)',
-    scrollOffset: 200,
-    margin: getMediumZoomMargin()
-  })
-
-  const zoomRef = React.useRef(zoom ? zoom.clone() : null)
-
-  React.useEffect(() => {
-    setTimeout(() => {
-      if (window.location.hash) {
-        const tocNode = document.getElementById(window.location.hash.substring(1))
-        if (tocNode && tocNode.className.indexOf('notion') > -1) {
-          tocNode.scrollIntoView({ block: 'start', behavior: 'smooth' })
-        }
-      }
-    }, 180)
-
-    setTimeout(() => {
-      if (isBrowser()) {
-        // 将相册gallery下的图片加入放大功能
-        const imgList = document.querySelectorAll('.notion-collection-card-cover img')
-        if (imgList && zoomRef.current) {
-          for (let i = 0; i < imgList.length; i++) {
-            (zoomRef.current).attach(imgList[i])
-          }
-        }
-
-        // 相册中的url替换成可点击
-        const cards = document.getElementsByClassName('notion-collection-card')
-        for (const e of cards) {
-          e.removeAttribute('href')
-          const links = e.querySelectorAll('.notion-link')
-          if (links && links.length > 0) {
-            for (const l of links) {
-              l.parentElement.innerHTML = `<a href='${l.innerText}' rel='noreferrer' target='_blank'>${l.innerText}</a>`
-            }
-          }
-        }
-      }
-    }, 800)
-
-    addWatch4Dom()
+  const zoomRef = useRef(null)
+  const IMAGE_ZOOM_IN_WIDTH = siteConfig('IMAGE_ZOOM_IN_WIDTH', 1200)
+  // 页面首次打开时执行的勾子
+  useEffect(() => {
+    // 检测当前的url并自动滚动到对应目标
+    autoScrollToHash()
   }, [])
 
-  return <div id='container' className='max-w-4xl mx-auto'>
-    <NotionRenderer
-      recordMap={post.blockMap}
-      mapPageUrl={mapPageUrl}
-      components={{
-        Code,
-        Collection,
-        Equation,
-        Modal,
-        Pdf,
-        nextImage: Image,
-        nextLink: Link
-      }} />
-  </div>
+  // 页面文章发生变化时会执行的勾子
+  useEffect(() => {
+    // 相册视图点击禁止跳转，只能放大查看图片
+    if (POST_DISABLE_GALLERY_CLICK) {
+      if (!zoomRef.current && isBrowser) {
+        zoomRef.current = mediumZoom({
+          background: 'rgba(0, 0, 0, 0.2)',
+          margin: getMediumZoomMargin()
+        })
+      }
+      // 针对页面中的gallery视图，点击后是放大图片还是跳转到gallery的内部页面
+      processGalleryImg(zoomRef?.current)
+    }
+
+    // 页内数据库点击禁止跳转，只能查看
+    if (POST_DISABLE_DATABASE_CLICK) {
+      processDisableDatabaseUrl()
+    }
+
+    /**
+     * 放大查看图片时替换成高清图像
+     */
+    const articleRoot =
+      document.getElementById('notion-article') || document.body
+    const hasAnyImage = Boolean(articleRoot.querySelector('img'))
+    if (!hasAnyImage) {
+      return
+    }
+
+    const observer = new MutationObserver((mutationsList, observer) => {
+      mutationsList.forEach(mutation => {
+        if (
+          mutation.type === 'attributes' &&
+          mutation.attributeName === 'class'
+        ) {
+          if (mutation.target.classList.contains('medium-zoom-image--opened')) {
+            // 等待动画完成后替换为更高清的图像
+            setTimeout(() => {
+              // 获取该元素的 src 属性
+              const src = mutation?.target?.getAttribute('src')
+              //   替换为更高清的图像
+              mutation?.target?.setAttribute(
+                'src',
+                compressImage(src, IMAGE_ZOOM_IN_WIDTH)
+              )
+            }, 800)
+          }
+        }
+      })
+    })
+
+    // 监视正文容器，避免对整个 document.body 做高开销监听
+    observer.observe(articleRoot, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ['class']
+    })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [post])
+
+  useEffect(() => {
+    // Spoiler文本功能
+    if (SPOILER_TEXT_TAG) {
+      import('lodash/escapeRegExp').then(escapeRegExp => {
+        Promise.all([
+          loadExternalResource('/js/spoilerText.js', 'js'),
+          loadExternalResource('/css/spoiler-text.css', 'css')
+        ]).then(() => {
+          window.textToSpoiler &&
+            window.textToSpoiler(escapeRegExp.default(SPOILER_TEXT_TAG))
+        })
+      })
+    }
+  }, [post])
+
+  // const cleanBlockMap = cleanBlocksWithWarn(post?.blockMap);
+  // console.log('NotionPage render with post:', post);
+
+  return (
+    <div
+      id='notion-article'
+      className={`mx-auto overflow-hidden ${className || ''}`}>
+      <NotionRenderer
+        recordMap={post?.blockMap}
+        mapPageUrl={mapPageUrl}
+        mapImageUrl={mapImgUrl}
+        components={{
+          Code,
+          Collection,
+          Embed: NotionEmbed,
+          Equation,
+          Link: NotionLink,
+          Modal,
+          Pdf,
+          Quote: NotionQuote,
+          Tweet
+        }}
+      />
+
+      <AdEmbed />
+      <OriginalityProof proof={post?.originalityProof} />
+      {hasCodeBlock(post?.blockMap) && <PrismMac />}
+    </div>
+  )
+}
+
+const hasCodeBlock = blockMap => {
+  const blocks = blockMap?.block
+  if (!blocks) return false
+  return Object.values(blocks).some(
+    item => item?.value?.type === 'code'
+  )
 }
 
 /**
- * 监听DOM变化
- * @param {*} element
+ * 页面的数据库链接禁止跳转，只能查看
  */
-function addWatch4Dom(element) {
-  // 选择需要观察变动的节点
-  const targetNode = element || document?.getElementById('container')
-  // 观察器的配置（需要观察什么变动）
-  const config = {
-    attributes: true,
-    childList: true,
-    subtree: true
-  }
-
-  // 当观察到变动时执行的回调函数
-  const mutationCallback = (mutations) => {
-    for (const mutation of mutations) {
-      const type = mutation.type
-      switch (type) {
-        case 'childList':
-          if (mutation.target.className === 'notion-code-copy') {
-            fixCopy(mutation.target)
-          } else if (mutation.target.className?.indexOf('language-') > -1) {
-            const copyCode = mutation.target.parentElement?.firstElementChild
-            if (copyCode) {
-              fixCopy(copyCode)
-            }
-          }
-          //   console.log('A child node has been added or removed.')
-          break
-        case 'attributes':
-        //   console.log(`The ${mutation.attributeName} attribute was modified.`)
-        //   console.log(mutation.attributeName)
-          break
-        case 'subtree':
-        //   console.log('The subtree was modified.')
-          break
-        default:
-          break
-      }
+const processDisableDatabaseUrl = () => {
+  if (isBrowser) {
+    const links = document.querySelectorAll('.notion-table a')
+    for (const e of links) {
+      e.removeAttribute('href')
     }
   }
-
-  // 创建一个观察器实例并传入回调函数
-  const observer = new MutationObserver(mutationCallback)
-  //   console.log(observer)
-  // 以上述配置开始观察目标节点
-  observer.observe(targetNode, config)
-
-  // observer.disconnect();
 }
 
 /**
- * 复制代码后，会重复 @see https://github.com/tangly1024/NotionNext/issues/165
- * @param {*} e
+ * gallery视图，点击后是放大图片还是跳转到gallery的内部页面
  */
-function fixCopy(codeCopy) {
-  const codeE = codeCopy.parentElement.lastElementChild
-  const codeEnd = codeE.lastChild
-  if (codeEnd.nodeName === '#text' && codeE.childNodes.length > 1) {
-    codeEnd.nodeValue = null
-  }
+const processGalleryImg = zoom => {
+  setTimeout(() => {
+    if (isBrowser) {
+      const imgList = document?.querySelectorAll(
+        '.notion-collection-card-cover img'
+      )
+      if (imgList && zoom) {
+        for (let i = 0; i < imgList.length; i++) {
+          zoom.attach(imgList[i])
+        }
+      }
+
+      const cards = document.getElementsByClassName('notion-collection-card')
+      for (const e of cards) {
+        e.removeAttribute('href')
+      }
+    }
+  }, 800)
+}
+
+/**
+ * 根据url参数自动滚动到锚位置
+ */
+const autoScrollToHash = () => {
+  setTimeout(() => {
+    // 跳转到指定标题
+    const hash = window?.location?.hash
+    const needToJumpToTitle = hash && hash.length > 0
+    if (needToJumpToTitle) {
+      console.log('jump to hash', hash)
+      const tocNode = document.getElementById(hash.substring(1))
+      if (tocNode && tocNode?.className?.indexOf('notion') > -1) {
+        tocNode.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      }
+    }
+  }, 180)
 }
 
 /**
@@ -164,9 +207,13 @@ function fixCopy(codeCopy) {
  */
 const mapPageUrl = id => {
   // return 'https://www.notion.so/' + id.replace(/-/g, '')
-  return '/article/' + id.replace(/-/g, '')
+  return '/' + id.replace(/-/g, '')
 }
 
+/**
+ * 缩放
+ * @returns
+ */
 function getMediumZoomMargin() {
   const width = window.innerWidth
 
@@ -183,6 +230,107 @@ function getMediumZoomMargin() {
   } else {
     return 72
   }
+}
+
+// 代码
+const Code = dynamic(
+  () =>
+    import('react-notion-x/build/third-party/code').then(m => {
+      return m.Code
+    }),
+  { ssr: false }
+)
+
+// 公式
+const Equation = dynamic(
+  () =>
+    import('@/components/Equation').then(async m => {
+      // 化学方程式
+      await import('@/lib/plugins/mhchem')
+      return m.Equation
+    }),
+  { ssr: true }
+)
+
+// 原版文档
+// const Pdf = dynamic(
+//   () => import('react-notion-x/build/third-party/pdf').then(m => m.Pdf),
+//   {
+//     ssr: false
+//   }
+// )
+const Pdf = dynamic(() => import('@/components/Pdf').then(m => m.Pdf), {
+  ssr: false
+})
+
+// 美化代码 from: https://github.com/txs
+const PrismMac = dynamic(() => import('@/components/PrismMac'), {
+  ssr: false
+})
+
+/**
+ * tweet嵌入
+ */
+const TweetEmbed = dynamic(() => import('react-tweet-embed'), {
+  ssr: false
+})
+
+/**
+ * 文内google广告
+ */
+const AdEmbed = dynamic(
+  () => import('@/components/GoogleAdsense').then(m => m.AdEmbed),
+  { ssr: true }
+)
+
+const Collection = dynamic(
+  () => import('@/components/NotionCollection'),
+  {
+    ssr: true
+  }
+)
+
+const Modal = dynamic(
+  () => import('react-notion-x/build/third-party/modal').then(m => m.Modal),
+  { ssr: false }
+)
+
+const Tweet = ({ id }) => {
+  return <TweetEmbed tweetId={id} />
+}
+
+// Custom Quote override: react-notion-x drops quotes without properties.title
+// (returns null from early guard). This renders them correctly — fixes #4140.
+const NotionQuote = ({ block, children }) => {
+  const title = block?.properties?.title
+  return (
+    <blockquote className='notion-quote'>
+      {title && <NotionText value={title} />}
+      {children}
+    </blockquote>
+  )
+}
+
+// Minimal inline text renderer for Notion rich-text arrays.
+// Each segment is [plainText, [[formatType, optionalValue], ...]].
+const NotionText = ({ value }) => {
+  if (!Array.isArray(value)) return null
+  return value.map((segment, i) => {
+    if (!Array.isArray(segment) || !segment[0]) return null
+    const [text, formats] = segment
+    let element = <>{text}</>
+    if (Array.isArray(formats)) {
+      for (const fmt of formats) {
+        const type = Array.isArray(fmt) ? fmt[0] : fmt
+        if (type === 'b') element = <strong>{element}</strong>
+        else if (type === 'i') element = <em>{element}</em>
+        else if (type === 's') element = <s>{element}</s>
+        else if (type === 'c') element = <code>{element}</code>
+        else if (type === 'a') element = <a href={Array.isArray(fmt) ? fmt[1] : '#'}>{element}</a>
+      }
+    }
+    return <span key={i}>{element}</span>
+  })
 }
 
 export default NotionPage

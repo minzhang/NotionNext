@@ -1,13 +1,22 @@
-import BLOG from '@/blog.config'
-import Link from 'next/link'
-import React from 'react'
-
+import { siteConfig } from '@/lib/config'
+import SmartLink from '@/components/SmartLink'
+/**
+ * Logo
+ * 实际值支持文字
+ * @param {*} props
+ * @returns
+ */
 const Logo = props => {
   const { siteInfo } = props
-  return <Link href='/' passHref>
-    <div className='flex flex-col justify-center items-center cursor-pointer space-y-3'>
-      <div className='font-sans text-lg p-1.5 rounded bg-black text-white dark:border-white border-black border'> {siteInfo?.title || BLOG.TITLE}</div>
-    </div>
-  </Link>
+  return (
+    <SmartLink href='/' passHref legacyBehavior>
+      <div className='flex flex-col justify-center items-center cursor-pointer space-y-3'>
+        <div className='font-bold text-lg p-1.5 rounded dark:border-white dark:text-white menu-link transform duration-200'>
+          {' '}
+          {siteInfo?.title || siteConfig('TITLE')}
+        </div>
+      </div>
+    </SmartLink>
+  )
 }
 export default Logo
