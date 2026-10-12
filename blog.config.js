@@ -1,154 +1,101 @@
-// 注: process.env.XX是Vercel的环境变量，配置方式见：https://docs.tangly1024.com/zh/features/personality
+// 注: process.env.XX是Vercel的环境变量，配置方式见：https://docs.tangly1024.com/article/how-to-config-notion-next#c4768010ae7d44609b744e79e2f9959a
+
 const BLOG = {
-  AUTHOR: 'Min Zhang', // 作者
-  BIO: '爱好杂乱会写代码', // 作者简介
-  LINK: 'https://blog.minzhang.com', // 网站地址
-  KEYWORDS: 'Notion, 博客, Blog', // 网站关键词 英文逗号隔开
+  API_BASE_URL: process.env.API_BASE_URL || 'https://app.notion.com/api/v3', // API默认请求地址,可以配置成自己的地址例如：https://[xxxxx].notion.site/api/v3
+  // Important page_id！！！Duplicate Template from  https://tanghh.notion.site/02ab3b8678004aa69e9e415905ef32a5
   NOTION_PAGE_ID:
-  process.env.NOTION_PAGE_ID || '97233f23b56242a2b1d53f583107507a', // Important page_id！！！Duplicate Template from  https://www.notion.so/tanghh/02ab3b8678004aa69e9e415905ef32a5
-  NOTION_ACCESS_TOKEN: process.env.NOTION_ACCESS_TOKEN || '', // Useful if you prefer not to make your database public
-  DEBUG: process.env.NEXT_PUBLIC_DEBUG || false, // 是否显示调试按钮
+    process.env.NOTION_PAGE_ID || '97233f23b56242a2b1d53f583107507a',
+  THEME: process.env.NEXT_PUBLIC_THEME || 'fukasawa', // 当前主题，在themes文件夹下可找到所有支持的主题；主题名称就是文件夹名，例如 claude,endspace,example,fukasawa,fuwari,gitbook,heo,hexo,landing,matery,medium,next,nobelium,plog,simple
+  LANG: process.env.NEXT_PUBLIC_LANG || 'zh-CN', // e.g 'zh-CN','en-US'  see /lib/lang.js for more.
+  SINCE: process.env.NEXT_PUBLIC_SINCE || 2010, // e.g if leave this empty, current year will be used.
 
-  // 一个小插件展示你的facebook fan page~ @see https://tw.andys.pro/article/add-facebook-fanpage-notionnext
-  FACEBOOK_PAGE_TITLE:
-    process.env.NEXT_PUBLIC_FACEBOOK_PAGE_TITLE || null, // 邊欄 Facebook Page widget 的標題欄，填''則無標題欄 e.g FACEBOOK 粉絲團'
-  FACEBOOK_PAGE:
-    process.env.NEXT_PUBLIC_FACEBOOK_PAGE || null, // Facebook Page 的連結 e.g https://www.facebook.com/tw.andys.pro
-  FACEBOOK_PAGE_ID: process.env.NEXT_PUBLIC_FACEBOOK_PAGE_ID || '', // Facebook Page ID 來啟用 messenger 聊天功能
-  FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '', // Facebook App ID 來啟用 messenger 聊天功能 获取: https://developers.facebook.com/
+  PSEUDO_STATIC: process.env.NEXT_PUBLIC_PSEUDO_STATIC || false, // 伪静态路径，开启后所有文章URL都以 .html 结尾。
+  NEXT_REVALIDATE_SECOND: process.env.NEXT_PUBLIC_REVALIDATE_SECOND || 60, // 更新缓存间隔 单位(秒)；即每个页面有60秒的纯静态期、此期间无论多少次访问都不会抓取notion数据；调大该值有助于节省Vercel资源、同时提升访问速率，但也会使文章更新有延迟。
+  REVALIDATION_TOKEN: process.env.REVALIDATION_TOKEN || '', // On-Demand Revalidation Token，设置后可通过 POST /api/revalidate 立即刷新页面缓存（解决 Notion 内容更新延迟问题）
+  APPEARANCE: process.env.NEXT_PUBLIC_APPEARANCE || 'light', // ['light', 'dark', 'auto'], // light 日间模式 ， dark夜间模式， auto根据时间和主题自动夜间模式
+  APPEARANCE_DARK_TIME: process.env.NEXT_PUBLIC_APPEARANCE_DARK_TIME || [18, 6], // 夜间模式起至时间，false时关闭根据时间自动切换夜间模式
 
-  THEME: process.env.NEXT_PUBLIC_THEME || 'fukasawa', // 主题， 支持 ['next','hexo',"fukasawa','medium','example'] @see https://preview.tangly1024.com
-  THEME_SWITCH: process.env.NEXT_PUBLIC_THEME_SWITCH || true, // 是否显示切换主题按钮
-  LANG: 'zh-CN', // e.g 'zh-CN','en-US'  see /lib/lang.js for more.
-  HOME_BANNER_IMAGE: './bg_image.jpg', // 首页背景大图，默认文件：/public/bg_image.jpg 。会被Notion中的封面图覆盖。
-  SINCE: 2010, // e.g if leave this empty, current year will be used.
-  BEI_AN: process.env.NEXT_PUBLIC_BEI_AN || '', // 备案号 闽ICP备XXXXXXX
-  APPEARANCE: 'light', // ['light', 'dark', 'auto'], // light 日间模式 ， dark夜间模式， auto根据时间和主题自动夜间模式
-  FONT: 'font-mono tracking-wider subpixel-antialiased', // 文章字体 ['font-sans', 'font-serif', 'font-mono'] @see https://www.tailwindcss.cn/docs/font-family
-  FONT_AWESOME_PATH:
-    'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.4/css/all.min.css', // 图标库CDN ，国内推荐BootCDN，国外推荐 CloudFlare https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css
-  BACKGROUND_LIGHT: '#eeeeee', // use hex value, don't forget '#' e.g #fffefc
-  BACKGROUND_DARK: '#000000', // use hex value, don't forget '#'
-  SUB_PATH: '', // leave this empty unless you want to deploy in a folder
+  AUTHOR: process.env.NEXT_PUBLIC_AUTHOR || 'Min Zhang', // 您的昵称 例如 tangly1024
+  BIO: process.env.NEXT_PUBLIC_BIO || '爱好杂乱会写代码', // 作者简介
+  LINK: process.env.NEXT_PUBLIC_LINK || 'https://blog.minzhang.com', // 网站地址
+  KEYWORDS: process.env.NEXT_PUBLIC_KEYWORD || 'Notion, 博客, Blog', // 网站关键词 英文逗号隔开
+  BLOG_FAVICON: process.env.NEXT_PUBLIC_FAVICON || '/favicon.ico', // blog favicon 配置, 默认使用 /public/favicon.ico，支持在线图片，如 https://img.imesong.com/favicon.png
+  PWA_ENABLE: process.env.NEXT_PUBLIC_PWA_ENABLE || false, // 是否启用 PWA 安装入口；也可在 Notion_Config 中配置 PWA_ENABLE=true
+  PWA_NAME: process.env.NEXT_PUBLIC_PWA_NAME || '', // PWA 安装名称；默认读取站点标题，通常无需单独配置
+  PWA_SHORT_NAME: process.env.NEXT_PUBLIC_PWA_SHORT_NAME || '', // PWA 短名称；默认读取站点标题，通常无需单独配置
+  PWA_ICON: process.env.NEXT_PUBLIC_PWA_ICON || '', // PWA 页面图标（apple-touch-icon / favicon 回退）；不控制 manifest 安装图标，manifest 使用内置尺寸合规的 PNG
+  PWA_ICON_192: process.env.NEXT_PUBLIC_PWA_ICON_192 || '', // 可选：覆盖 manifest 192x192 普通图标；须提供真实 192×192 尺寸的资源路径
+  PWA_ICON_512: process.env.NEXT_PUBLIC_PWA_ICON_512 || '', // 可选：覆盖 manifest 512x512 普通图标；须提供真实 512×512 尺寸的资源路径
+  PWA_ICON_192_MASKABLE: process.env.NEXT_PUBLIC_PWA_ICON_192_MASKABLE || '', // 可选：覆盖 manifest 192x192 maskable 图标；资源应留有足够安全边距
+  PWA_ICON_512_MASKABLE: process.env.NEXT_PUBLIC_PWA_ICON_512_MASKABLE || '', // 可选：覆盖 manifest 512x512 maskable 图标；资源应留有足够安全边距
+  PWA_THEME_COLOR: process.env.NEXT_PUBLIC_PWA_THEME_COLOR || '', // PWA 主题色
+  PWA_BACKGROUND_COLOR: process.env.NEXT_PUBLIC_PWA_BACKGROUND_COLOR || '', // PWA 启动画面背景色
+  BEI_AN: process.env.NEXT_PUBLIC_BEI_AN || '', // 备案号 闽ICP备XXXXXX
+  BEI_AN_LINK: process.env.NEXT_PUBLIC_BEI_AN_LINK || 'https://beian.miit.gov.cn/', // 备案查询链接，如果用了萌备等备案请在这里填写
+  BEI_AN_GONGAN: process.env.NEXT_PUBLIC_BEI_AN_GONGAN || '', // 公安备案号，例如 '浙公网安备3xxxxxxxx8号'
 
-  POST_LIST_STYLE: 'page', // ['page','scroll] 文章列表样式:页码分页、单页滚动加载
-  POST_LIST_PREVIEW: process.env.NEXT_PUBLIC_POST_PREVIEW || 'false', //  是否在列表加载文章预览
-  POST_PREVIEW_LINES: 12, // 预览博客行数
-  POST_RECOMMEND_COUNT: 6, // 推荐文章数量
-  POSTS_PER_PAGE: 6, // post counts per page
-  POSTS_SORT_BY: 'notion', // 排序方式 'date'按时间,'notion'由notion控制
+  // RSS订阅
+  ENABLE_RSS: process.env.NEXT_PUBLIC_ENABLE_RSS || true, // 是否开启RSS订阅功能
+  RSS_FULL_CONTENT: process.env.RSS_FULL_CONTENT || true, // RSS是否返回文章全文；false时仅返回摘要
 
-  PREVIEW_CATEGORY_COUNT: 16, // 首页最多展示的分类数量，0为不限制
-  PREVIEW_TAG_COUNT: 16, // 首页最多展示的标签数量，0为不限制
+  // 其它复杂配置
+  // 原配置文件过长，且并非所有人都会用到，故此将配置拆分到/conf/目录下, 按需找到对应文件并修改即可
+  ...require('./conf/comment.config'), // 评论插件
+  ...require('./conf/contact.config'), // 作者联系方式配置
+  ...require('./conf/post.config'), // 文章与列表配置
+  ...require('./conf/analytics.config'), // 站点访问统计
+  ...require('./conf/image.config'), // 网站图片相关配置
+  ...require('./conf/font.config'), // 网站字体
+  ...require('./conf/right-click-menu'), // 自定义右键菜单相关配置
+  ...require('./conf/code.config'), // 网站代码块样式
+  ...require('./conf/animation.config'), // 动效美化效果
+  ...require('./conf/widget.config'), // 悬浮在网页上的挂件，聊天客服、宠物挂件、音乐播放器等
+  ...require('./conf/ad.config'), // 广告营收插件
+  ...require('./conf/plugin.config'), // 其他第三方插件 algolia全文索引
+  ...require('./conf/ai.config'), // AI 相关配置（AI摘要、AI聊天机器人等）
+  ...require('./conf/performance.config'), // 性能优化配置
+  ...require('./conf/top-tag.config'), // 置顶文章全局配置
 
-  // 社交链接，不需要可留空白，例如 CONTACT_WEIBO:''
-  CONTACT_EMAIL: '',
-  CONTACT_WEIBO: '',
-  CONTACT_TWITTER: '',
-  CONTACT_GITHUB: '',
-  CONTACT_TELEGRAM: '',
+  // 高级用法
+  ...require('./conf/layout-map.config'), // 路由与布局映射自定义，例如自定义特定路由的页面布局
+  ...require('./conf/notion.config'), // 读取notion数据库相关的扩展配置，例如自定义表头
+  ...require('./conf/dev.config'), // 开发、调试时需要关注的配置
 
-  // 鼠标点击烟花特效
-  FIREWORKS: process.env.NEXT_PUBLIC_FIREWORKS || false, // 鼠标点击烟花特效
+  // 自定义外部脚本，外部样式
+  CUSTOM_EXTERNAL_JS: [''], // e.g. ['http://xx.com/script.js','http://xx.com/script.js']
+  CUSTOM_EXTERNAL_CSS: [''], // e.g. ['http://xx.com/style.css','http://xx.com/style.css']
 
-  // 悬浮挂件
-  WIDGET_PET: process.env.NEXT_PUBLIC_WIDGET_PET || true, // 是否显示宠物挂件
-  WIDGET_PET_LINK:
-    'https://cdn.jsdelivr.net/npm/live2d-widget-model-wanko@1.0.5/assets/wanko.model.json', // 挂件模型地址 @see https://github.com/xiazeyu/live2d-widget-models
-  WIDGET_PET_SWITCH_THEME: true, // 点击宠物挂件切换博客主题
+  // 自定义菜单
+  CUSTOM_MENU: process.env.NEXT_PUBLIC_CUSTOM_MENU || true, // 支持Menu类型的菜单，替代了3.12版本前的Page类型
 
-  // 评论互动 可同时开启多个支持 GISCUS CUSDIS UTTERRANCES GITALK
+  // 文章列表相关设置
+  CAN_COPY: process.env.NEXT_PUBLIC_CAN_COPY || true, // 是否允许复制页面内容，默认允许；可被文章属性 CAN_COPY / ext.CAN_COPY 覆盖。
 
-  // giscus @see https://giscus.app/
-  COMMENT_GISCUS_REPO: process.env.NEXT_PUBLIC_COMMENT_GISCUS_REPO || '', // 你的Github仓库名 e.g 'tangly1024/NotionNext'
-  COMMENT_GISCUS_REPO_ID: process.env.NEXT_PUBLIC_COMMENT_GISCUS_REPO_ID || '', // 你的Github Repo ID e.g ( 設定完 giscus 即可看到 )
-  COMMENT_GISCUS_CATEGORY_ID:
-    process.env.NEXT_PUBLIC_COMMENT_GISCUS_CATEGORY_ID || '', // 你的Github Discussions 內的 Category ID ( 設定完 giscus 即可看到 )
-  COMMENT_GISCUS_MAPPING:
-    process.env.NEXT_PUBLIC_COMMENT_GISCUS_MAPPING || 'pathname', // 你的Github Discussions 使用哪種方式來標定文章, 預設 'pathname'
-  COMMENT_GISCUS_REACTIONS_ENABLED:
-    process.env.NEXT_PUBLIC_COMMENT_GISCUS_REACTIONS_ENABLED || '1', // 你的 Giscus 是否開啟文章表情符號 '1' 開啟 "0" 關閉 預設開啟
-  COMMENT_GISCUS_EMIT_METADATA:
-    process.env.NEXT_PUBLIC_COMMENT_GISCUS_EMIT_METADATA || '0', // 你的 Giscus 是否提取 Metadata '1' 開啟 '0' 關閉 預設關閉
-  COMMENT_GISCUS_INPUT_POSITION:
-    process.env.NEXT_PUBLIC_COMMENT_GISCUS_INPUT_POSITION || 'bottom', // 你的 Giscus 發表留言位置 'bottom' 尾部 'top' 頂部, 預設 'bottom'
-  COMMENT_GISCUS_LANG: process.env.NEXT_PUBLIC_COMMENT_GISCUS_LANG || 'zh-CN', // 你的 Giscus 語言 e.g 'en', 'zh-TW', 'zh-CN', 預設 'en'
-  COMMENT_GISCUS_LOADING:
-    process.env.NEXT_PUBLIC_COMMENT_GISCUS_LOADING || 'lazy', // 你的 Giscus 載入是否漸進式載入, 預設 'lazy'
-  COMMENT_GISCUS_CROSSORIGIN:
-    process.env.NEXT_PUBLIC_COMMENT_GISCUS_CROSSORIGIN || 'anonymous', // 你的 Giscus 可以跨網域, 預設 'anonymous'
+  ...require('./conf/techgrow.config'), // 公众号导流插件（TechGrow）
 
-  COMMENT_CUSDIS_APP_ID: process.env.NEXT_PUBLIC_COMMENT_CUSDIS_APP_ID || '148a2b60-94e3-46b6-b317-847f875e2060', // data-app-id 36位 see https://cusdis.com/
-  COMMENT_CUSDIS_HOST:
-    process.env.NEXT_PUBLIC_COMMENT_CUSDIS_HOST || 'https://cusdis.com', // data-host, change this if you're using self-hosted version
-  COMMENT_CUSDIS_SCRIPT_SRC:
-    process.env.NEXT_PUBLIC_COMMENT_CUSDIS_SCRIPT_SRC ||
-    'https://cusdis.com/js/cusdis.es.js', // change this if you're using self-hosted version
+  // 侧栏布局 是否反转(左变右,右变左) 已支持主题: hexo next medium fukasawa example
+  LAYOUT_SIDEBAR_REVERSE:
+    process.env.NEXT_PUBLIC_LAYOUT_SIDEBAR_REVERSE || false,
 
-  COMMENT_UTTERRANCES_REPO:
-    process.env.NEXT_PUBLIC_COMMENT_UTTERRANCES_REPO || '', // 你的代码仓库名， 例如我是 'tangly1024/NotionNext'； 更多文档参考 https://utteranc.es/
+  // 欢迎语打字效果,Hexo,Matery主题支持, 英文逗号隔开多个欢迎语。
+  GREETING_WORDS:
+    process.env.NEXT_PUBLIC_GREETING_WORDS ||
+    '会写代码,爱好杂乱,欢迎来到我的博客🎉',
 
-  // gitalk评论插件 更多参考 https://gitalk.github.io/
-  COMMENT_GITALK_REPO: process.env.NEXT_PUBLIC_COMMENT_GITALK_REPO || '', // 你的Github仓库名，例如 'NotionNext'
-  COMMENT_GITALK_OWNER: process.env.NEXT_PUBLIC_COMMENT_GITALK_OWNER || '', // 你的用户名 e.g tangly1024
-  COMMENT_GITALK_ADMIN: process.env.NEXT_PUBLIC_COMMENT_GITALK_ADMIN || '', // 管理员用户名、一般是自己 e.g 'tangly1024'
-  COMMENT_GITALK_CLIENT_ID:
-    process.env.NEXT_PUBLIC_COMMENT_GITALK_CLIENT_ID || '', // e.g 20位ID ， 在gitalk后台获取
-  COMMENT_GITALK_CLIENT_SECRET:
-    process.env.NEXT_PUBLIC_COMMENT_GITALK_CLIENT_SECRET || '', // e.g 40位ID， 在gitalk后台获取
-  COMMENT_GITALK_DISTRACTION_FREE_MODE: false, // 类似facebook的无干扰模式
+  // 欢迎语打字效果类型速度
+  GREETING_WORDS_TYPE_SPEED:
+    process.env.NEXT_PUBLIC_GREETING_WORDS_TYPE_SPEED || 200,
 
-  COMMENT_GITTER_ROOM: process.env.NEXT_PUBLIC_COMMENT_GITTER_ROOM || '', // gitter聊天室 see https://gitter.im/ 不需要则留空
-  COMMENT_DAO_VOICE_ID: process.env.NEXT_PUBLIC_COMMENT_DAO_VOICE_ID || '', // DaoVoice http://dashboard.daovoice.io/get-started
-  COMMENT_TIDIO_ID: process.env.NEXT_PUBLIC_COMMENT_TIDIO_ID || '', // [tidio_id] -> //code.tidio.co/[tidio_id].js
+  // 欢迎语打字效果回退速度
+  GREETING_WORDS_BACK_SPEED:
+    process.env.NEXT_PUBLIC_GREETING_WORDS_BACK_SPEED || 100,
 
-  COMMENT_VALINE_APP_ID: process.env.NEXT_PUBLIC_VALINE_ID || '', // Valine @see https://valine.js.org/quickstart.html 或 https://github.com/stonehank/react-valine#%E8%8E%B7%E5%8F%96app-id-%E5%92%8C-app-key
-  COMMENT_VALINE_APP_KEY: process.env.NEXT_PUBLIC_VALINE_KEY || '',
-  COMMENT_VALINE_SERVER_URLS: process.env.NEXT_PUBLIC_VALINE_SERVER_URLS || '', // 该配置适用于国内自定义域名用户, 海外版本会自动检测(无需手动填写) @see https://valine.js.org/configuration.html#serverURLs
-  COMMENT_VALINE_PLACEHOLDER: process.env.NEXT_PUBLIC_VALINE_PLACEHOLDER || '抢个沙发吧~', // 可以搭配后台管理评论 https://github.com/DesertsP/Valine-Admin  便于查看评论，以及邮件通知，垃圾评论过滤等功能
+  // uuid重定向至 slug
+  UUID_REDIRECT: process.env.UUID_REDIRECT || false,
 
-  COMMENT_WALINE_SERVER_URL: process.env.NEXT_PUBLIC_WALINE_SERVER_URL || '', // Waline 评论 @see https://waline.js.org/guide/get-started.html
-  COMMENT_WALINE_RECENT: process.env.NEXT_PUBLIC_WALINE_RECENT || false, // 最新评论
-
-  // 站点统计
-  ANALYTICS_BUSUANZI_ENABLE: true, // 展示网站阅读量、访问数 see http://busuanzi.ibruce.info/
-  ANALYTICS_BAIDU_ID: process.env.NEXT_PUBLIC_ANALYTICS_BAIDU_ID || '', // e.g 只需要填写百度统计的id，[baidu_id] -> https://hm.baidu.com/hm.js?[baidu_id]
-  ANALYTICS_CNZZ_ID: process.env.NEXT_PUBLIC_ANALYTICS_CNZZ_ID || '', // 只需要填写站长统计的id, [cnzz_id] -> https://s9.cnzz.com/z_stat.php?id=[cnzz_id]&web_id=[cnzz_id]
-  ANALYTICS_GOOGLE_ID: process.env.NEXT_PUBLIC_ANALYTICS_GOOGLE_ID || 'G-8N5K9G8Q11', // 谷歌Analytics的id e.g: G-XXXXXXXXXX
-
-  ANALYTICS_ACKEE_TRACKER:
-    process.env.NEXT_PUBLIC_ANALYTICS_ACKEE_TRACKER || '', // e.g 'https://ackee.tangly1024.net/tracker.js'
-  ANALYTICS_ACKEE_DATA_SERVER:
-    process.env.NEXT_PUBLIC_ANALYTICS_ACKEE_DATA_SERVER || '', // e.g https://ackee.tangly1024.net , don't end with a slash
-  ANALYTICS_ACKEE_DOMAIN_ID:
-    process.env.NEXT_PUBLIC_ANALYTICS_ACKEE_DOMAIN_ID || '', // e.g '0e2257a8-54d4-4847-91a1-0311ea48cc7b'
-
-  SEO_GOOGLE_SITE_VERIFICATION:
-    process.env.NEXT_PUBLIC_SEO_GOOGLE_SITE_VERIFICATION || '', // Remove the value or replace it with your own google site verification code
-
-  ADSENSE_GOOGLE_ID: process.env.NEXT_PUBLIC_ADSENSE_GOOGLE_ID || '', // 谷歌广告ID e.g ca-pub-xxxxxxxxxxxxxxxx
-
-  // 无关紧要的配置
-  // 自定义配置notion数据库字段名
-  NOTION_PROPERTY_NAME: {
-    password: 'password',
-    type: 'type',
-    title: 'title',
-    status: 'status',
-    summary: 'summary',
-    slug: 'slug',
-    category: 'category',
-    date: 'date',
-    tags: 'tags',
-    icon: 'icon'
-  },
-  AVATAR: '/avatar.png', // 作者头像，被notion中的ICON覆盖。如果没有ICON则取public目录下的avatar.png
-  TITLE: process.env.NEXT_PUBLIC_TITLE || 'NotionNext BLOG', // 站点标题 ，被notion中的页面标题覆盖
-  DESCRIPTION:
-    process.env.NEXT_PUBLIC_DESCRIPTION || '这是一个由NotionNext生成的站点', // 站点描述，被notion中的页面描述覆盖
-
-  isProd: process.env.VERCEL_ENV === 'production', // distinguish between development and production environment (ref: https://vercel.com/docs/environment-variables#system-environment-variables)  isProd: process.env.VERCEL_ENV === 'production' // distinguish between development and production environment (ref: https://vercel.com/docs/environment-variables#system-environment-variables)
-  VERSION: process.env.NEXT_PUBLIC_VERSION // 版本号
+  // 内嵌 Notion 子页面 URL 跟随父级文章路径，例如 /article/post/{pageId}
+  INNER_PAGE_URL_PARENT_PATH:
+    process.env.NEXT_PUBLIC_INNER_PAGE_URL_PARENT_PATH || false
 }
 
 module.exports = BLOG
