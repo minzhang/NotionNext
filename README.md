@@ -8,6 +8,8 @@
 
 继续在 Notion 写作，一键发布为博客、作品集、知识库、导航站或产品官网。
 
+本仓库是 Min Zhang 的部署副本。上游、Notion 数据库、本地运行和 Vercel 发布说明见 [FORK.md](./FORK.md)。
+
 <p>
   <a href="https://preview.tangly1024.com/">在线预览</a>
   ·
